@@ -21,12 +21,12 @@ CONFIG_FILES = (
 )
 
 
-def fetch(path: str) -> bytes | None:
+def fetch(path: str, token: str) -> bytes | None:
     request = urllib.request.Request(
         f"https://api.github.com/{path}",
         headers={
             "Accept": "application/vnd.github.raw+json",
-            "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+            "Authorization": f"Bearer {token}",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
@@ -39,8 +39,8 @@ def fetch(path: str) -> bytes | None:
         raise
 
 
-def get(path: str) -> Any:
-    body = fetch(path)
+def get(path: str, token: str) -> Any:
+    body = fetch(path, token)
     return None if body is None else json.loads(body)
 
 
@@ -63,35 +63,36 @@ def problems(config: Any, source: str) -> list[str]:
     return found
 
 
-def repository_problems(repository: dict[str, Any]) -> list[str]:
+def repository_problems(repository: dict[str, Any], token: str) -> list[str]:
     name = repository["full_name"]
     found = []
     for path in CONFIG_FILES:
         if path.endswith("json5") or path == ".renovaterc":
-            if fetch(f"repos/{name}/contents/{path}") is not None:
+            if fetch(f"repos/{name}/contents/{path}", token) is not None:
                 found.append(f"{name}/{path} must be JSON named renovate.json")
             continue
-        config = get(f"repos/{name}/contents/{path}")
+        config = get(f"repos/{name}/contents/{path}", token)
         if config is not None:
             found += problems(config, f"{name}/{path}")
-    package = get(f"repos/{name}/contents/package.json")
+    package = get(f"repos/{name}/contents/package.json", token)
     if package is not None and "renovate" in package:
         found += problems(package["renovate"], f"{name}/package.json")
     return found
 
 
 def main() -> int:
+    token = os.environ["GITHUB_TOKEN"]
     preset = json.loads(Path("default.json").read_text(encoding="utf-8"))
     found = []
     if preset.get("automerge") is not True or disables_automerge(preset):
         found.append("default.json must enable automerge for every update")
     repositories = [
         repository
-        for repository in get(f"orgs/{ORGANIZATION}/repos?per_page=100")
+        for repository in get(f"orgs/{ORGANIZATION}/repos?per_page=100", token)
         if not repository["archived"]
     ]
     for repository in repositories:
-        found += repository_problems(repository)
+        found += repository_problems(repository, token)
     for problem in found:
         print(f"::error::{problem}")
     print(f"checked {len(repositories)} repositories, {len(found)} problems")
