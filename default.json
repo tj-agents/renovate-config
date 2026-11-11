@@ -16,6 +16,11 @@
       "groupName": "non-major dependencies"
     },
     {
+      "matchSourceUrls": ["https://github.com/tj-agents/**"],
+      "groupName": "tj-agents pins",
+      "schedule": ["at any time"]
+    },
+    {
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["tj-agents/template"],
       "enabled": false
