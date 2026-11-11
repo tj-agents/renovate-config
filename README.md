@@ -14,10 +14,7 @@ employer organizations are never reachable by it.
 
 ## Status
 
-Org-level inheritance is live: repositories no longer need a `renovate.json` to get coverage. Per-repository
-Renovate stub files are being removed as repositories are touched; as of this writing `agent` and
-`marketplace` still carry a `.github/renovate.json` stub left over from before org-level inheritance — check
-a given repository's actual files rather than assuming the migration is complete everywhere.
+Org-level inheritance is live: a repository without its own Renovate config gets this preset automatically.
 
 ## Configuration
 
@@ -28,4 +25,7 @@ a given repository's actual files rather than assuming the migration is complete
   (Template is consumed through its own generator/update path, not a dependency bump).
 
 A repository only needs its own `renovate.json` to add something genuinely specific to it, such as a custom
-manager; it should otherwise rely on inheritance rather than re-declaring this preset.
+manager; it should otherwise rely on inheritance. The inherited config does not reach a repository that has its
+own config file, so that file must extend `github>tj-agents/renovate-config`, or its Renovate PRs lose automerge
+and wait for a human. The `automerge` workflow fails daily and on every change here when any repository's own
+config omits the preset or disables automerge.
